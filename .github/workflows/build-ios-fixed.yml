@@ -1,0 +1,50 @@
+name: Build Echo iOS IPA (No Signing) k
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+
+    steps:
+      # 1️⃣ Checkout repo
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      # 2️⃣ Setup Flutter
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+
+      # 4️⃣ Remove old iOS folder to force fresh creation
+      - name: Remove old iOS folder
+        run: rm -rf ios
+
+      # 5️⃣ Create fresh iOS folder (this generates Podfile)
+      - name: Create fresh iOS project
+        run: flutter create -i objc .
+
+      # 6️⃣ Run pub get
+      - name: Flutter pub get
+        run: flutter pub get
+
+      # 7️⃣ Now install CocoaPods (after iOS folder exists)
+      - name: Install CocoaPods
+        run: |
+          sudo gem install cocoapods
+          cd ios
+          pod install
+          cd ..
+
+      # 8️⃣ Build IPA without signing
+      - name: Build IPA (No Codesign)
+        run: flutter build ipa --export-method ad-hoc --no-codesign
+
+      # 9️⃣ Upload IPA artifact
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: echo-ios-ipa
+          path: build/ios/ipa/*.ipa
