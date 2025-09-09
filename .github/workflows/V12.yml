@@ -38,14 +38,6 @@ jobs:
           flutter pub get
           cd ..
 
-      # 8️⃣ Install CocoaPods in ios_temp
-      - name: Install CocoaPods
-        run: |
-          sudo gem install cocoapods
-          cd ios_temp/ios
-          pod install
-          cd ../..
-
       # 9️⃣ Build IPA without signing
       - name: Build IPA (No Codesign)
         run: |
