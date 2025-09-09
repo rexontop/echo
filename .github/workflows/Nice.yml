@@ -1,0 +1,63 @@
+name: Build Echo iOS Runner.app (No CocoaPods)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+
+    steps:
+      # 1️⃣ Checkout repo
+      - name: Checkout Echo repo
+        uses: actions/checkout@v3
+
+      # 2️⃣ Setup Flutter
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+
+      # 3️⃣ Temporarily remove Android folder
+      - name: Remove Android folder
+        run: mv android android_backup || true
+
+      # 4️⃣ Remove any existing iOS folder
+      - name: Remove old iOS folder
+        run: rm -rf ios ios_temp
+
+      # 5️⃣ Create fresh iOS project in ios_temp
+      - name: Create fresh iOS project
+        run: flutter create -i objc ios_temp
+
+      # 6️⃣ Copy Flutter code into ios_temp
+      - name: Copy Flutter code
+        run: |
+          rsync -av --exclude="ios_temp/" ./ ios_temp/
+
+      # 7️⃣ Install Flutter dependencies
+      - name: Flutter pub get
+        run: |
+          cd ios_temp
+          flutter pub get
+          cd ..
+
+      # 8️⃣ Build IPA / Runner.app without signing
+      - name: Build Runner.app (No Codesign)
+        run: |
+          cd ios_temp
+          flutter build ipa --export-method ad-hoc --no-codesign
+          ls -R build/ios/ipa
+          cd ..
+
+      # 9️⃣ Upload Runner.app artifact
+      - name: Upload Runner.app
+        uses: actions/upload-artifact@v4
+        with:
+          name: echo-ios-runner
+          path: ios_temp/build/ios/ipa/Runner.xcarchive/Products/Applications/Runner.app
+
+      # 🔟 Restore Android folder
+      - name: Restore Android folder
+        run: mv android_backup android || true
+        
