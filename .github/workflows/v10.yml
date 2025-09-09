@@ -1,0 +1,59 @@
+name: Build Echo iOS IPA (Force Fresh iOS)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+
+    steps:
+      # 1️⃣ Checkout repo
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      # 2️⃣ Setup Flutter
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0'
+
+      # 3️⃣ Temporarily remove Android folder
+      - name: Remove Android folder
+        run: mv android android_backup || true
+
+      # 4️⃣ Remove any existing iOS folder to force fresh creation
+      - name: Remove existing iOS folder
+        run: rm -rf ios
+
+      # 5️⃣ Force create fresh iOS folder
+      - name: Create fresh iOS folder
+        run: flutter create -i objc .
+
+      # 6️⃣ Install Flutter dependencies
+      - name: Flutter pub get
+        run: flutter pub get
+
+      # 7️⃣ Install CocoaPods
+      - name: Install CocoaPods
+        run: |
+          sudo gem install cocoapods
+          cd ios
+          pod install
+          cd ..
+
+      # 8️⃣ Build IPA without signing
+      - name: Build IPA (No Codesign)
+        run: flutter build ipa --export-method ad-hoc --no-codesign
+
+      # 9️⃣ Upload IPA artifact
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: echo-ios-ipa
+          path: build/ios/ipa/*.ipa
+
+      # 🔟 Restore Android folder
+      - name: Restore Android folder
+        run: mv android_backup android || true
+        
