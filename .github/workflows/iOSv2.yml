@@ -1,0 +1,47 @@
+name: Build Echo iOS IPA (No Signing)
+
+on:
+  workflow_dispatch: # Manual trigger
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout Echo repo
+        uses: actions/checkout@v3
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.24.0' # Adjust to match Echo
+
+      - name: Flutter pub get
+        run: flutter pub get
+
+      # ⚡ Remove Android folder to skip Android build
+      - name: Remove Android folder
+        run: rm -rf android
+
+      - name: Create iOS project if missing
+        run: |
+          if [ ! -d "ios" ]; then
+            flutter create .
+          fi
+
+      - name: Install CocoaPods
+        run: |
+          sudo gem install cocoapods
+          cd ios
+          pod install
+          cd ..
+
+      - name: Build iOS IPA (No Signing)
+        run: flutter build ipa --export-method ad-hoc --no-codesign
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: echo-ios-ipa
+          path: build/ios/ipa/*.ipa
+          
